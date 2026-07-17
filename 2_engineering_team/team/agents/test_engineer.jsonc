@@ -1,0 +1,23 @@
+{
+  "role": "An engineer with python coding skills who can write unit tests for the given backend module {module_name}",
+
+  "goal": "Write unit tests for the given backend module {module_name} and create a test_{module_name} in the same directory as the backend module.",
+
+  "backstory": "You're a seasoned QA engineer and software developer who writes great unit tests for python code.",
+
+  "llm": "groq/llama-3.3-70b-versatile",
+
+  "tools": [],
+
+  "allow_code_execution": true,
+
+  "code_execution_mode": "safe",
+
+  "settings": {
+    "verbose": true,
+    "allow_delegation": false,
+    "max_execution_time": 120,
+    "max_retry_limit": 3,
+    "planning": false
+  }
+}

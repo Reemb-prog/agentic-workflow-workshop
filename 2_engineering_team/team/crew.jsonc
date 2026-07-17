@@ -1,98 +1,92 @@
 {
-  // Display name for this crew
-  "name": "team",
+  "name": "EngineeringYamlTeam",
 
-  // Agents to include — each must have a matching agents/<name>.jsonc file
-  "agents": ["placeholder"],
-
-  // Task definitions — executed in order for sequential process
-  "tasks": [
-    {
-      // Task identifier
-      "name": "placeholder_task",
-
-      // What the task should accomplish
-      // Use {placeholder} inputs here; crewai run prompts for missing values
-      "description": "{placeholder}",
-
-      // Clear definition of what the output should look like
-      "expected_output": "{placeholder}",
-
-      // Optional task guardrail(s) validate output before completion
-      // Use "guardrail" for one rule or "guardrails" for many
-      // Failed guardrails retry up to guardrail_max_retries times
-      // "guardrail": "Every factual claim needs context support.",
-      // "guardrails": [
-      //   "Every factual claim must be supported by context.",
-      //   "The answer must match the expected output format."
-      // ],
-      // "guardrail_max_retries": 2,
-
-      // Advanced task options:
-      // Docs: https://docs.crewai.com/concepts/tasks
-      // "type": "ConditionalTask",
-      // "condition": { "python": "my_project.conditions.should_run" },
-      // "output_json": { "python": "my_project.models.ReportOutput" },
-      // "output_pydantic": null,
-      // "response_model": null,
-      // "converter_cls": { "python": "my_project.converters.CustomConverter" },
-      // "markdown": false,
-      // "input_files": { "brief": "data/brief.txt" },
-      // "security_config": {},
-
-      // Which agent handles this task
-      "agent": "placeholder"
-
-      // "tools": [],
-      // "human_input": false,
-      // "async_execution": false
-    }
-
+  "agents": [
+    "engineering_lead",
+    "backend_engineer",
+    "frontend_engineer",
+    "test_engineer"
   ],
 
-  // Execution process
-  // "sequential" — tasks run in order, each receiving prior task outputs
-  // "hierarchical" — a manager agent delegates tasks (requires manager_llm)
+  "tasks": [
+    {
+      "name": "design_task",
+
+      "description": "Take the high level requirements described here and prepare a detailed design for the engineer; everything should be in 1 python module, but outline the classes and methods in the module. Here are the requirements: {requirements} IMPORTANT: Only output the design in markdown format, laying out in detail the classes and functions in the module, describing the functionality.",
+
+      "expected_output": "A detailed design for the engineer, identifying the classes and functions in the module.",
+
+      "agent": "engineering_lead",
+
+      "output_file": "output/{module_name}_design.md"
+    },
+
+    {
+      "name": "code_task",
+
+      "description": "Write a python module that implements the design described by the engineering lead, in order to achieve the requirements. Here are the requirements: {requirements} Return only executable Python source code.",
+
+      "expected_output": "A python module that implements the design and achieves the requirements. IMPORTANT: Output ONLY the raw executable Python code without any markdown formatting, code block delimiters, or backticks. The output should be valid Python code that can be directly saved to a file and executed.",
+
+      "agent": "backend_engineer",
+
+      "context": [
+        "design_task"
+      ],
+
+      "output_file": "output/{module_name}"
+    },
+
+    {
+      "name": "frontend_task",
+
+      "description": "Write a gradio UI in a module app.py that demonstrates the given backend class in {module_name}. Assume there is only 1 user, and keep the UI very simple indeed - just a prototype or demo. Here are the requirements: {requirements}",
+
+      "expected_output": "A gradio UI in module app.py that demonstrates the given backend class. The file should be ready so that it can be run as-is, in the same directory as the backend module, and it should import the backend class from {module_name}. IMPORTANT: Output ONLY the raw Python code without any markdown formatting, code block delimiters, or backticks. The output should be valid Python code that can be directly saved to a file and executed.",
+
+      "agent": "frontend_engineer",
+
+      "context": [
+        "code_task"
+      ],
+
+      "output_file": "output/app.py"
+    },
+
+    {
+      "name": "test_task",
+
+      "description": "Write unit tests for the given backend module {module_name} and create a test_{module_name} in the same directory as the backend module.",
+
+      "expected_output": "A test_{module_name} module that tests the given backend module. IMPORTANT: Output ONLY the raw Python code without any markdown formatting, code block delimiters, or backticks. The output should be valid Python code that can be directly saved to a file and executed.",
+
+      "agent": "test_engineer",
+
+      "context": [
+        "code_task"
+      ],
+
+      "output_file": "output/test_{module_name}"
+    }
+  ],
+
   "process": "sequential",
 
-  // Enable verbose logging during execution
   "verbose": true,
 
-  // Enable crew memory — persists context and learnings across tasks
   "memory": false,
 
-  // Automatically plan the execution strategy before running tasks
-  // "planning": false,
+  "before_kickoff_callbacks": [
+    {
+      "python": "callbacks.prepare_runtime"
+    }
+  ],
 
-  // LLM for the planning step (used when planning is true)
-  // "planning_llm": "openai/gpt-4o",
+  "inputs": {
+    "requirements": "\nA simple account management system for a trading simulation platform.\nThe system should allow users to create an account, deposit funds, and withdraw funds.\nThe system should allow users to record that they have bought or sold shares, providing a quantity.\nThe system should calculate the total value of the user's portfolio, and the profit or loss from the initial deposit.\nThe system should be able to report the holdings of the user at any point in time.\nThe system should be able to report the profit or loss of the user at any point in time.\nThe system should be able to list the transactions that the user has made over time.\nThe system should prevent the user from withdrawing funds that would leave them with a negative balance, or\n from buying more shares than they can afford, or selling shares that they don't have.\n The system has access to a function get_share_price(symbol) which returns the current price of a share, and includes a test implementation that returns fixed prices for AAPL, TSLA, GOOGL.\n",
 
-  // LLM for the manager agent (required when process is "hierarchical")
-  // "manager_llm": "openai/gpt-4o",
+    "module_name": "accounts.py",
 
-  // Crew-level LLM fields also accept object form for custom endpoints
-  // "chat_llm": {"model": "llama3", "provider": "ollama", "base_url": "http://localhost:11434"},
-
-  // Advanced crew options:
-  // Docs: https://docs.crewai.com/concepts/crews
-  // For hierarchical crews, manager_agent can reference an agents/<name>.jsonc file
-  // that is not included in the "agents" list.
-  // "manager_agent": "placeholder",
-  // "before_kickoff_callbacks": [{"python": "my_project.callbacks.before_kickoff"}],
-  // "after_kickoff_callbacks": [{"python": "my_project.callbacks.after_kickoff"}],
-  // "function_calling_llm": "openai/gpt-4o-mini",
-  // "max_rpm": null,
-  // "cache": true,
-  // "knowledge_sources": [],
-  // "embedder": {},
-  // "output_log_file": "crew.log",
-  // "stream": false,
-  // "tracing": false,
-  // "security_config": {},
-
-  // Optional runtime input defaults.
-  // Use {placeholder} in agent or task text, for example:
-  // "description": "Research {topic} and write a brief"
-  // `crewai run` prompts for any placeholders missing from this object.
-  "inputs": {}
+    "class_name": "Account"
+  }
 }
